@@ -108,7 +108,8 @@ class HyenaDNAPreTrainedModel(PreTrainedModel):
         scratch_model = HyenaDNAModel(**config, use_head=use_head, n_classes=n_classes)  # the new model format
         loaded_ckpt = torch.load(
             os.path.join(pretrained_model_name_or_path, 'weights.ckpt'),
-            map_location=torch.device(device)
+            map_location=torch.device(device),
+            weights_only=True
         )
 
         # need to load weights slightly different if using gradient checkpointing
@@ -248,7 +249,7 @@ def inference_single():
     print(embeddings.shape)  # embeddings here!
 
 # # uncomment to run! (to get embeddings)
-inference_single()
+# inference_single()
 
 
 # to run this, just call:
