@@ -6,7 +6,7 @@ Here we should write down the most important contributions and milestones that w
 ### Milestones
 - Set up 🤗 Transformers dev environment    (**Done**)
 - Set up debugging environment of the original repository   (**Done**)
-- Created script that successfully runs the forward() pass using the original repository and checkpoint (**maybe done**)
+- Created script that successfully runs the forward() pass using the original repository and checkpoint (**Done**)
 - Successfully added the model skeleton to 🤗 Transformers
 - Successfully converted original checkpoint to 🤗 Transformers checkpoint
 - Successfully ran forward() pass in 🤗 Transformers that gives identical output to original checkpoint
