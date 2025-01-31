@@ -145,6 +145,7 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         shift_augs=None,
         rc_aug=False,
         return_augs=False,
+        rc_strand=False, # reverse complement the sequence in strand -
         replace_N_token=False,  # replace N token with pad token
         pad_interval = False,  # options for different padding
     ):
@@ -157,7 +158,8 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         self.add_eos = add_eos
         self.replace_N_token = replace_N_token  
         self.pad_interval = pad_interval 
-        self.split_dict = {'train': 0, 'val': 1, 'test': 2}        
+        self.split_dict = {'train': 0, 'val': 1, 'test': 2}
+        self.rc_strand = rc_strand       
 
         bed_path = Path(bed_file)
         assert bed_path.exists(), 'path to .bed file must exist'
@@ -196,7 +198,7 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
 
         seq = self.fasta(chr_name, start, end, max_length=self.max_length, return_augs=self.return_augs)
 
-        if seq_strand == '-':
+        if self.rc_strand & seq_strand == '-':
             seq = string_reverse_complement(seq)
 
         if self.tokenizer_name == 'char':
