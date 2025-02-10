@@ -4,7 +4,7 @@ from pyfaidx import Fasta
 import polars as pl
 import pandas as pd
 import torch
-from random import randrange, random
+from random import randrange, random, choices
 import numpy as np
 
 
@@ -69,13 +69,15 @@ class FastaInterval():
             self.chr_lens[chr_name] = len(self.seqs[chr_name])
 
 
-    def __call__(self, chr_name, start, end, max_length, return_augs = False):
+    def __call__(self, chr_name, start, end, max_length, random_aug = False):
         """
         max_length passed from dataset, not from init
         """
         interval_length = end - start
         chromosome = self.seqs[chr_name]
         chromosome_length = self.chr_lens[chr_name]
+        rand_seq_left = ''
+        rand_seq_right = ''
 
         if exists(self.shift_augs):
             min_shift, max_shift = self.shift_augs
@@ -97,8 +99,15 @@ class FastaInterval():
             extra_left_seq = extra_seq // 2
             extra_right_seq = extra_seq - extra_left_seq
 
-            start -= extra_left_seq
-            end += extra_right_seq
+            # if random_aug is enabled, add random sequence to the left and right
+            if random_aug:
+                rand_seq_left = str.join('', choices(['A', 'C', 'G', 'T'], k=extra_left_seq))
+                rand_seq_right = str.join('', choices(['A', 'C', 'G', 'T'], k=extra_right_seq))
+            
+            # else, extend sequence left and right with the data from the chromosome
+            else:
+                start -= extra_left_seq
+                end += extra_right_seq
 
         if start < 0:
             left_padding = -start
@@ -112,7 +121,7 @@ class FastaInterval():
         if interval_length > max_length:
             end = start + max_length
 
-        seq = str(chromosome[start:end])
+        seq = rand_seq_left + str(chromosome[start:end]) + rand_seq_right
 
         # if reverse complement augmentation is enabled, 
         # reverse complement the sequence with 50% probability 
@@ -121,6 +130,9 @@ class FastaInterval():
 
         if self.pad_interval:
             seq = ('.' * left_padding) + seq + ('.' * right_padding)
+        
+        # Uppercase normalization
+        seq = seq.upper()
 
         return seq
 
@@ -144,7 +156,6 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         return_seq_indices=False,
         shift_augs=None,
         rc_aug=False,
-        return_augs=False,
         rc_strand=False, # reverse complement the sequence in strand -
         replace_N_token=False,  # replace N token with pad token
         pad_interval = False,  # options for different padding
@@ -154,18 +165,17 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         self.pad_max_length = pad_max_length if pad_max_length is not None else max_length
         self.tokenizer_name = tokenizer_name
         self.tokenizer = tokenizer
-        self.return_augs = return_augs
         self.add_eos = add_eos
         self.replace_N_token = replace_N_token  
         self.pad_interval = pad_interval 
         self.split_dict = {'train': 0, 'val': 1, 'test': 2}
-        self.rc_strand = rc_strand       
+        self.rc_strand = rc_strand      
 
         bed_path = Path(bed_file)
         assert bed_path.exists(), 'path to .bed file must exist'
 
         # read bed file
-        df_raw = pd.read_csv(str(bed_path), sep = '\t', names=['chr_name', 'start', 'end', 'label' ,'split', 'strand'])
+        df_raw = pd.read_csv(str(bed_path), sep = '\t', names=['chr_name', 'start', 'end', 'label' ,'split', 'strand'], header=0)        
         # select only split df
         self.df = df_raw[df_raw['split'] == self.split_dict[split]]
 
@@ -196,9 +206,13 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         # row = (chr, start, end, label ,split, strand)
         chr_name, start, end, seq_label, seq_strand = (row[0], row[1], row[2], row[3], row[5])
 
-        seq = self.fasta(chr_name, start, end, max_length=self.max_length, return_augs=self.return_augs)
+        # hack, random augmentation for intergenic regions
+        if seq_label == 'intergenic':
+            seq = self.fasta(chr_name, start, end, max_length=self.max_length, random_aug=True)
+        else:
+            seq = self.fasta(chr_name, start, end, max_length=self.max_length)
 
-        if self.rc_strand & seq_strand == '-':
+        if self.rc_strand & (seq_strand == '-'):
             seq = string_reverse_complement(seq)
 
         if self.tokenizer_name == 'char':
