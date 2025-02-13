@@ -250,4 +250,4 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         label = torch.LongTensor([self.label_dict[seq_label]])
         target = label.clone()  # the label
 
-        return data, target
+        return {"input_ids": data, "labels": target}

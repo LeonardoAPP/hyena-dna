@@ -15,7 +15,10 @@
 * The training dataset have to be a list of nucleotides sequences and a list of labes corresponding to each sequence (***Done***)
 
 * Base-line experiment: genes vs intergenic regions
-    - gene seq from gff 
-    - intergenic regions far from centromers
-    - Study trainig loss vs validation loss
-    - Study performance vs ds_train length 
+    - gene seq from gff (***Done***)
+    - intergenic regions far from centromers (***Done***)
+    - Study trainig loss vs validation loss (***Done***)
+    - Study performance vs ds_train_length (***Done***)
+    - Evaluate performance vs `max_length`
+    - Evaluate the effects of random data in `intergenic` on model performance
+    - Create a `pipeline(raw_data): -> train_data_set`  
