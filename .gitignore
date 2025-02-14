@@ -12,6 +12,10 @@ outputs/
 
 data
 
+A_Thaliana.bed
+saved_model/
+saved_model_2/
+
 # Created by https://www.gitignore.io/api/python
 # Edit at https://www.gitignore.io/?templates=python
 
@@ -121,4 +125,3 @@ dmypy.json
 .pyre/
 
 # End of https://www.gitignore.io/api/python
-A_Thaliana.bed
