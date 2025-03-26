@@ -5,6 +5,7 @@ import polars as pl
 import pandas as pd
 import torch
 from random import randrange, random, choices
+import random as rand
 import numpy as np
 
 
@@ -149,15 +150,17 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         bed_file,
         fasta_file,
         max_length,
-        pad_max_length=None,
-        tokenizer=None,
-        tokenizer_name=None,
-        add_eos=False,
-        return_seq_indices=False,
-        shift_augs=None,
-        rc_aug=False,
-        rc_strand=False, # reverse complement the sequence in strand -
-        replace_N_token=False,  # replace N token with pad token
+        pad_max_length = None,
+        tokenizer = None,
+        tokenizer_name = None,
+        add_eos = False,
+        return_seq_indices = False,
+        shift_augs = None,
+        rc_aug = False,
+        rand_aug = True, # random augmentation for intergenic regions
+        rc_strand = False, # reverse complement the sequence in strand -
+        deterministic_mode = False, # deterministic mode for random augmentations
+        replace_N_token = False,  # replace N token with pad token
         pad_interval = False,  # options for different padding
     ):
 
@@ -169,7 +172,9 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         self.replace_N_token = replace_N_token  
         self.pad_interval = pad_interval 
         self.split_dict = {'train': 0, 'val': 1, 'test': 2}
-        self.rc_strand = rc_strand      
+        self.rc_strand = rc_strand     
+        self.rand_aug = rand_aug
+        self.deterministic_mode = deterministic_mode
 
         bed_path = Path(bed_file)
         assert bed_path.exists(), 'path to .bed file must exist'
@@ -201,6 +206,13 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         """Returns a sequence of specified len"""
+        # Fijar semilla basada en idx para hacer aumentos aleatorios deterministas
+        if self.deterministic_mode:
+            seed = 42 + idx  # Puedes usar cualquier número base (42) + idx
+            torch.manual_seed(seed)
+            np.random.seed(seed)
+            rand.seed(seed)  # Si usas `random` en FastaInterval
+
         # sample a random row from df
         row = self.df.iloc[idx]
         # row = (chr, start, end, label ,split, strand)
@@ -208,7 +220,7 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
 
         # hack, random augmentation for intergenic regions
         if seq_label == 'intergenic':
-            seq = self.fasta(chr_name, start, end, max_length=self.max_length, random_aug=True)
+            seq = self.fasta(chr_name, start, end, max_length=self.max_length, random_aug = self.rand_aug)
         else:
             seq = self.fasta(chr_name, start, end, max_length=self.max_length)
 
