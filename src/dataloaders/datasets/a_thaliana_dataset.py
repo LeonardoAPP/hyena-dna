@@ -49,6 +49,7 @@ class FastaInterval():
         shift_augs = None,
         rc_aug = False,
         pad_interval = False,
+        pad_only = False,  # NUEVO: solo pad con puntos, no extender con datos reales
     ):
         fasta_file = Path(fasta_file)
         assert fasta_file.exists(), 'path to fasta file must exist'
@@ -58,7 +59,8 @@ class FastaInterval():
         # self.max_length = max_length # -1 for adding sos or eos token
         self.shift_augs = shift_augs
         self.rc_aug = rc_aug
-        self.pad_interval = pad_interval        
+        self.pad_interval = pad_interval 
+        self.pad_only = pad_only
 
         # calc len of each chromosome in fasta file, store in dict
         self.chr_lens = {}
@@ -104,7 +106,10 @@ class FastaInterval():
             if random_aug:
                 rand_seq_left = str.join('', choices(['A', 'C', 'G', 'T'], k=extra_left_seq))
                 rand_seq_right = str.join('', choices(['A', 'C', 'G', 'T'], k=extra_right_seq))
-            
+            # if pad_only is enabled, pad with '.' only
+            elif self.pad_only:
+                left_padding = extra_left_seq
+                right_padding = extra_right_seq
             # else, extend sequence left and right with the data from the chromosome
             else:
                 start -= extra_left_seq
@@ -129,7 +134,7 @@ class FastaInterval():
         if self.rc_aug and coin_flip():
             seq = string_reverse_complement(seq)
 
-        if self.pad_interval:
+        if self.pad_interval or self.pad_only:
             seq = ('.' * left_padding) + seq + ('.' * right_padding)
         
         # Uppercase normalization
@@ -162,6 +167,7 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         deterministic_mode = False, # deterministic mode for random augmentations
         replace_N_token = False,  # replace N token with pad token
         pad_interval = False,  # options for different padding
+        pad_only = False,
     ):
 
         self.max_length = max_length
@@ -175,6 +181,7 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
         self.rc_strand = rc_strand     
         self.rand_aug = rand_aug
         self.deterministic_mode = deterministic_mode
+
 
         bed_path = Path(bed_file)
         assert bed_path.exists(), 'path to .bed file must exist'
@@ -191,6 +198,7 @@ class a_thalinana_Dataset(torch.utils.data.Dataset):
             shift_augs = shift_augs,
             rc_aug = rc_aug,
             pad_interval = pad_interval,
+            pad_only = pad_only,  
         )
 
         classes = self.df['label'].unique().tolist()

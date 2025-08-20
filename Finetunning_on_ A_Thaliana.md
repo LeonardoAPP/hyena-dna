@@ -7,6 +7,10 @@
     - `TAIR10_mod.Rfam.gff3` --> non-coding RNA
     - `TAIR10_Transposable_Elements.bed` --> transposons
 
+* Split the genome previously (to prevent data leakage)
+    - 3/4 train
+    - 1/8 validation
+    - 1/8 test
 * Create a `.bed` file with annotations `chr_n`, `strart`, `end`, `label`, `split` [0,1,2], `strand` [+,-,.]. (***Done***)
 * Create a script that loop thru `.bed` and `.fasta` file and return a sequence of length `max_length` and its label from a random entry of the `.bed` file. (***Done***)
     - When the `seq_len` from the `.bed` file is less than `max_length`, the sequence is extended to fill the `max_length` 
